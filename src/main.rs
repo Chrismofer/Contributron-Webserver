@@ -2,7 +2,9 @@ use {
     chrono::{DateTime, Datelike, Days, NaiveDate, NaiveTime, Utc},
     image::{GenericImageView, Pixel},
     std::{
-        fs, iter,
+        fs,
+        io::ErrorKind,
+        iter,
         ops::RangeInclusive,
         path::{self, PathBuf},
     },
@@ -28,6 +30,12 @@ struct Args {
     /// Git reference (usually a branch name).
     #[arg(short, long, default_value = "HEAD")]
     git_reference: String,
+    /// Maximum number of commits per day.
+    #[arg(short, long, default_value_t = 255)]
+    brightness_levels: usize,
+    /// Whether to overwrite an existing folder if one exists.
+    #[arg(short, long, default_value_t = false)]
+    overwrite: bool,
 }
 
 struct GitInfo<'reference, 'name, 'email> {
@@ -38,7 +46,12 @@ struct GitInfo<'reference, 'name, 'email> {
 }
 
 #[inline]
-fn draw_repeating_pattern(git: &GitInfo, columns: &[[u8; 7]], dates: RangeInclusive<NaiveDate>) {
+fn draw_repeating_pattern(
+    git: &GitInfo,
+    columns: &[[u8; 7]],
+    dates: RangeInclusive<NaiveDate>,
+    brightness_levels: u16,
+) {
     // TODO: dithering?
 
     let mut pixels = iter::repeat_with(move || columns.iter().chain(iter::once(&[0; 7])))
@@ -53,7 +66,7 @@ fn draw_repeating_pattern(git: &GitInfo, columns: &[[u8; 7]], dates: RangeInclus
             .next()
             .expect("Internal error: ran out of pixels (should repeat endlessly)");
 
-        let () = draw_pixel(git, pixel, date);
+        let () = draw_pixel(git, pixel, date, brightness_levels);
 
         println!(
             "{:3}% ({date})",
@@ -68,7 +81,7 @@ fn draw_repeating_pattern(git: &GitInfo, columns: &[[u8; 7]], dates: RangeInclus
 }
 
 #[inline]
-fn draw_pixel(git: &GitInfo, pixel: u8, date: NaiveDate) {
+fn draw_pixel(git: &GitInfo, pixel: u8, date: NaiveDate, brightness_levels: u16) {
     let utc = {
         let time = {
             let hour = 12;
@@ -124,7 +137,13 @@ fn draw_pixel(git: &GitInfo, pixel: u8, date: NaiveDate) {
         };
         reference.peel_to_commit().ok()
     };
-    for i in 0..pixel {
+
+    let n_commits = {
+        let extra_space = pixel as u16;
+        let product = extra_space * brightness_levels;
+        (product >> 8) as u8
+    };
+    for i in 0..n_commits {
         // let message = format!("{} #{}/{pixel}", utc.to_rfc3339(), i + 1);
         let message = format!("#{}/{pixel}", i + 1);
         let parents: &[&_] = if let Some(ref parent) = parent {
@@ -158,7 +177,16 @@ fn main() {
         ref name,
         ref email,
         ref git_reference,
+        brightness_levels,
+        overwrite,
     } = clap::Parser::parse();
+
+    let brightness_levels = match brightness_levels {
+        0 => panic!("The number of brightness levels should be nonzero: nothing would be drawn."),
+        #[expect(clippy::as_conversions, reason = "Range explicitly checked.")]
+        1..=256 => brightness_levels as u16,
+        _ => panic!("The number of brightness levels should be at most 256."),
+    };
 
     // Convert the repository path to an absolute path:
     let repo = match path::absolute(&repo) {
@@ -174,6 +202,18 @@ fn main() {
             Err(e) => panic!(
                 "Couldn't ensure that `{}` exists: {e}",
                 parent.to_string_lossy(),
+            ),
+        }
+    }
+
+    if overwrite {
+        match fs::remove_dir_all(&repo) {
+            Ok(()) => {}
+            Err(e) => assert_eq!(
+                e.kind(),
+                ErrorKind::NotFound,
+                "Couldn't remove `{}`: {e} ({e:#?})",
+                repo.to_string_lossy(),
             ),
         }
     }
@@ -251,5 +291,5 @@ fn main() {
         name,
         email,
     };
-    let () = draw_repeating_pattern(&git, &columns, a_year_ago..=date);
+    let () = draw_repeating_pattern(&git, &columns, a_year_ago..=date, brightness_levels);
 }

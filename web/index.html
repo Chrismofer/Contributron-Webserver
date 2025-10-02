@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contributron - GitHub Pixel Art Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: #0d1117;
+            color: #f0f6fc;
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #58a6ff;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #8b949e;
+            margin-bottom: 40px;
+        }
+
+
+
+        /* Pixel Editor Styles */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .canvas-section {
+            width: 100%;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .mini-view-container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+            flex-shrink: 0;
+            width: 200px;
+        }
+
+        .mini-view-grid {
+            display: grid;
+            grid-template-columns: repeat(53, 3px);
+            grid-template-rows: repeat(7, 3px);
+            gap: 0;
+            justify-content: center;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        .mini-pixel {
+            width: 3px;
+            height: 3px;
+        }
+
+        .mini-pixel.level-0 { background-color: #161b22; }
+        .mini-pixel.level-1 { background-color: #0e4429; }
+        .mini-pixel.level-2 { background-color: #006d32; }
+        .mini-pixel.level-3 { background-color: #26a641; }
+        .mini-pixel.level-4 { background-color: #39d353; }
+
+        .canvas-container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .controls-section {
+            width: 100%;
+        }
+
+        .controls-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: 1fr;
+        }
+
+        .canvas-grid {
+            display: inline-grid;
+            grid-template-columns: repeat(53, 1fr);
+            grid-template-rows: repeat(7, 1fr);
+            gap: 2px;
+            background: #21262d;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .pixel {
+            width: 16px;
+            height: 16px;
+            background: #161b22;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .pixel:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 1px #58a6ff;
+        }
+
+        .pixel.level-0 { background: #161b22; }
+        .pixel.level-1 { background: #0e4429; }
+        .pixel.level-2 { background: #006d32; }
+        .pixel.level-3 { background: #26a641; }
+        .pixel.level-4 { background: #39d353; }
+
+        /* Responsive layout for controls */
+        @media (min-width: 1200px) {
+            .controls-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 1199px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .control-group {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .control-group h3 {
+            color: #58a6ff;
+            margin-bottom: 15px;
+        }
+
+        .brush-levels {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .brush-level {
+            width: 40px;
+            height: 40px;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .brush-level.active {
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.3);
+        }
+
+        .brush-level.level-0 { background: #161b22; }
+        .brush-level.level-1 { background: #0e4429; }
+        .brush-level.level-2 { background: #006d32; }
+        .brush-level.level-3 { background: #26a641; }
+        .brush-level.level-4 { background: #39d353; }
+
+        .tool-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tool-btn {
+            padding: 10px;
+            background: #21262d;
+            color: #f0f6fc;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: #30363d;
+            border-color: #58a6ff;
+        }
+
+        .export-btn {
+            background: #238636;
+        }
+
+        .export-btn:hover {
+            background: #2ea043;
+        }
+
+        .import-btn {
+            background: #58a6ff;
+        }
+
+        .import-btn:hover {
+            background: #1f6feb;
+        }
+
+        .canvas-info {
+            margin: 15px 0;
+            padding: 10px;
+            background: #0d1117;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .canvas-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .pattern-examples {
+            margin-top: 20px;
+        }
+
+        .example-patterns {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .example-pattern {
+            padding: 8px 12px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .example-pattern:hover {
+            background: #30363d;
+            border-color: #58a6ff;
+        }
+
+        .slider-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .slider-group label {
+            font-size: 14px;
+            color: #f0f6fc;
+            font-weight: 500;
+        }
+
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #21262d;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #58a6ff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .slider-group input[type="range"]::-webkit-slider-thumb:hover {
+            background: #79c0ff;
+            transform: scale(1.1);
+        }
+
+        .slider-group input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #58a6ff;
+            cursor: pointer;
+            border: none;
+        }
+
+        @media (max-width: 768px) {
+            .canvas-grid {
+                transform: scale(0.8);
+                margin: 10px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .canvas-grid {
+                transform: scale(0.6);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #f0f6fc;
+            font-weight: 500;
+        }
+
+        input[type="text"], input[type="email"], input[type="password"], input[type="file"] {
+            width: 100%;
+            padding: 8px 12px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #f0f6fc;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, input[type="file"]:focus {
+            outline: none;
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3);
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload-label {
+            display: block;
+            padding: 8px 12px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            color: #8b949e;
+        }
+
+        .file-upload-label:hover {
+            background: #30363d;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .preview-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .image-preview {
+            max-width: 200px;
+            max-height: 100px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .requirements {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .requirements h3 {
+            color: #f85149;
+            margin-bottom: 10px;
+        }
+
+        .requirements ul {
+            margin-left: 20px;
+        }
+
+        .requirements li {
+            margin-bottom: 5px;
+            color: #8b949e;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 12px;
+            background: #238636;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .generate-btn:hover {
+            background: #2ea043;
+        }
+
+        .generate-btn:disabled {
+            background: #30363d;
+            color: #8b949e;
+            cursor: not-allowed;
+        }
+
+        .output {
+            margin-top: 30px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            display: none;
+        }
+
+        .output.show {
+            display: block;
+        }
+
+        .output h3 {
+            color: #58a6ff;
+            margin-bottom: 15px;
+        }
+
+        .output pre {
+            background: #0d1117;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .download-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 16px;
+            background: #58a6ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .download-link:hover {
+            background: #1f6feb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #30363d;
+            border-top: 3px solid #58a6ff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Contributron</h1>
+        <p class="subtitle">Create pixel art with your GitHub contribution graph</p>
+
+
+
+        <!-- Pixel Editor -->
+        <div id="editor">
+            <div class="editor-container">
+                <div class="canvas-section">
+                    <div class="mini-view-container">
+                        <h4>Mini View</h4>
+                        <div class="mini-view-grid" id="mini-view-grid">
+                            <!-- Mini pixels will be generated by JavaScript -->
+                        </div>
+                        <small style="color: #8b949e;">Live preview</small>
+                    </div>
+                    
+                    <div class="canvas-container">
+                        <h3>GitHub Contribution Graph Canvas</h3>
+                        <div class="canvas-info">
+                            <strong>7 rows × 53 columns</strong> - Each row represents a day of the week (Sun-Sat), each column represents a week
+                        </div>
+                        
+                        <div class="canvas-grid" id="canvas-grid">
+                            <!-- Pixels will be generated by JavaScript -->
+                        </div>
+                        
+                        <div class="canvas-actions">
+                            <button class="tool-btn export-btn" id="export-btn">🖼️ Export as PNG</button>
+                            <button class="tool-btn" id="clear-btn">🗑️ Clear Canvas</button>
+                            <button class="tool-btn" id="invert-btn">🔄 Invert Pattern</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <div class="controls-grid">
+                        <div class="control-group">
+                            <h3>🖌️ Brush</h3>
+                            <div class="brush-levels" id="brush-levels">
+                                <div class="brush-level level-0 active" data-level="0" title="No commits"></div>
+                                <div class="brush-level level-1" data-level="1" title="1-3 commits"></div>
+                                <div class="brush-level level-2" data-level="2" title="4-6 commits"></div>
+                                <div class="brush-level level-3" data-level="3" title="7-9 commits"></div>
+                                <div class="brush-level level-4" data-level="4" title="10+ commits"></div>
+                            </div>
+                            <p style="font-size: 12px; color: #8b949e;">Click to select brush intensity</p>
+                        </div>
+
+                        <div class="control-group">
+                            <h3>🛠️ Tools</h3>
+                            <div class="tool-buttons">
+                                <button class="tool-btn" id="fill-btn">🪣 Fill All</button>
+                                <button class="tool-btn" id="random-btn">🎲 Random Pattern</button>
+                                <button class="tool-btn import-btn" id="import-btn">📂 Import Image</button>
+                                <input type="file" id="import-file" accept="image/*" style="display: none;">
+                            </div>
+                        </div>
+
+                        <div class="control-group" id="image-transform-controls" style="display: none;">
+                            <h3>🖼️ Image Transform</h3>
+                            <div class="slider-controls">
+                                <div class="slider-group">
+                                    <label for="scale-slider">Scale: <span id="scale-value">1.0</span></label>
+                                    <input type="range" id="scale-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="x-offset-slider">X Offset: <span id="x-offset-value">0</span></label>
+                                    <input type="range" id="x-offset-slider" min="-50" max="50" step="1" value="0">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="y-offset-slider">Y Offset: <span id="y-offset-value">0</span></label>
+                                    <input type="range" id="y-offset-slider" min="-10" max="10" step="1" value="0">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="image-copies-slider">Copies: <span id="image-copies-value">1</span></label>
+                                    <input type="range" id="image-copies-slider" min="1" max="20" step="1" value="1" class="slider">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="image-spacing-slider">X Spacing: <span id="image-spacing-value">10</span></label>
+                                    <input type="range" id="image-spacing-slider" min="1" max="60" step="1" value="10" class="slider">
+                                </div>
+                                <button class="tool-btn" id="reset-transform-btn" style="margin-top: 10px;">🔄 Reset</button>
+                            </div>
+                        </div>
+
+                        <div class="control-group pattern-examples">
+                            <h3>📋 Example Patterns</h3>
+                            <div class="example-patterns">
+                                <button class="example-pattern" data-pattern="wave">🌊 Wave</button>
+                                <button class="example-pattern" data-pattern="diagonal">📐 Diagonal</button>
+                                <button class="example-pattern" data-pattern="checkerboard">♟️ Checker</button>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <select id="example-select" style="width: 100%; padding: 8px; background: #21262d; border: 1px solid #30363d; color: #f0f6fc; border-radius: 6px;">
+                                    <option value="">Load PNG Example...</option>
+                                </select>
+                            </div>
+                            
+                            <!-- PNG Controls -->
+                            <div id="png-controls" class="control-group" style="display: none; margin-top: 15px; border-top: 1px solid #30363d; padding-top: 15px;">
+                                <h4>📂 PNG Pattern Settings</h4>
+                                <div class="slider-group">
+                                    <label for="png-copies-slider">Copies: <span id="png-copies-value">1</span></label>
+                                    <input type="range" id="png-copies-slider" min="1" max="53" value="1" class="slider">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="png-spacing-slider">X Spacing: <span id="png-spacing-value">10</span></label>
+                                    <input type="range" id="png-spacing-slider" min="1" max="60" value="10" class="slider">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="png-x-slider">X Offset: <span id="png-x-value">0</span></label>
+                                    <input type="range" id="png-x-slider" min="-20" max="20" value="0" class="slider">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="png-y-slider">Y Offset: <span id="png-y-value">0</span></label>
+                                    <input type="range" id="png-y-slider" min="-7" max="7" value="0" class="slider">
+                                </div>
+                            </div>
+                            
+                            <!-- Pattern Controls (hidden by default) -->
+                            
+                            <!-- Wave Controls -->
+                            <div id="wave-controls" class="control-group" style="display: none; margin-top: 15px; border-top: 1px solid #30363d; padding-top: 15px;">
+                                <h4>🌊 Wave Settings</h4>
+                                <div class="slider-group">
+                                    <label for="wave-angle-slider">Angle: <span id="wave-angle-value">46</span>°</label>
+                                    <input type="range" id="wave-angle-slider" min="0" max="180" step="1" value="46">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="wave-period-slider">Period: <span id="wave-period-value">0.57</span></label>
+                                    <input type="range" id="wave-period-slider" min="0.001" max="10" step="0.001" value="0.57">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="wave-x-slider">X Offset: <span id="wave-x-value">0</span></label>
+                                    <input type="range" id="wave-x-slider" min="-100" max="100" step="1" value="0">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="wave-y-slider">Y Offset: <span id="wave-y-value">0</span></label>
+                                    <input type="range" id="wave-y-slider" min="-100" max="100" step="1" value="0">
+                                </div>
+                            </div>
+
+                            <!-- Diagonal Controls -->
+                            <div id="diagonal-controls" class="control-group" style="display: none; margin-top: 15px; border-top: 1px solid #30363d; padding-top: 15px;">
+                                <h4>📐 Diagonal Settings</h4>
+                                <div class="slider-group">
+                                    <label for="diagonal-copies-slider">Copies: <span id="diagonal-copies-value">53</span></label>
+                                    <input type="range" id="diagonal-copies-slider" min="1" max="53" step="1" value="53">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="diagonal-period-slider">Spacing: <span id="diagonal-period-value">7</span></label>
+                                    <input type="range" id="diagonal-period-slider" min="1" max="60" step="1" value="7">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="diagonal-x-slider">X Offset: <span id="diagonal-x-value">0</span></label>
+                                    <input type="range" id="diagonal-x-slider" min="-100" max="100" step="1" value="0">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="diagonal-y-slider">Y Offset: <span id="diagonal-y-value">0</span></label>
+                                    <input type="range" id="diagonal-y-slider" min="-100" max="100" step="1" value="0">
+                                </div>
+                            </div>
+
+                            <!-- Checkerboard Controls -->
+                            <div id="checkerboard-controls" class="control-group" style="display: none; margin-top: 15px; border-top: 1px solid #30363d; padding-top: 15px;">
+                                <h4>♟️ Checkerboard Settings</h4>
+                                <div class="slider-group">
+                                    <label for="checkerboard-copies-slider">Copies: <span id="checkerboard-copies-value">53</span></label>
+                                    <input type="range" id="checkerboard-copies-slider" min="1" max="53" step="1" value="53">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="checkerboard-period-slider">Spacing: <span id="checkerboard-period-value">2</span></label>
+                                    <input type="range" id="checkerboard-period-slider" min="1" max="60" step="1" value="2">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="checkerboard-x-slider">X Offset: <span id="checkerboard-x-value">0</span></label>
+                                    <input type="range" id="checkerboard-x-slider" min="-100" max="100" step="1" value="0">
+                                </div>
+                                <div class="slider-group">
+                                    <label for="checkerboard-y-slider">Y Offset: <span id="checkerboard-y-value">0</span></label>
+                                    <input type="range" id="checkerboard-y-slider" min="-100" max="100" step="1" value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form id="editor-form" style="margin-top: 30px;">
+                <div class="form-group">
+                    <label for="editor-email">Your GitHub Email</label>
+                    <input type="email" id="editor-email" name="email" required placeholder="your-github-email@example.com">
+                    <small style="color: #8b949e; font-size: 12px;">⚠️ Must match a verified email on your GitHub account</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="editor-repo-name">Repository Name</label>
+                    <input type="text" id="editor-repo-name" name="repo-name" required placeholder="my-pixel-art" value="contributron-art">
+                    <small style="color: #8b949e; font-size: 12px;">Just the repository name (e.g., "my-pixel-art") or full GitHub URL</small>
+                </div>
+
+                <button type="submit" class="generate-btn" id="editor-generate-btn" style="margin-bottom: 30px;">
+                    📦 Generate Local Repo with Pre-dated Commits
+                </button>
+
+                <div class="control-group" style="margin-top: 20px;">
+                    <h3>🚀 Push to GitHub</h3>
+                    <p style="color: #8b949e; font-size: 14px; margin-bottom: 15px;">Push your generated repository to GitHub</p>
+                    
+                    <div class="form-group">
+                        <label for="editor-github-username">GitHub Username</label>
+                        <input type="text" id="editor-github-username" name="github-username" placeholder="your-username">
+                        <small style="color: #8b949e; font-size: 12px;">Your GitHub username</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editor-github-token">GitHub Personal Access Token</label>
+                        <input type="password" id="editor-github-token" name="github-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                        <small style="color: #8b949e; font-size: 12px;">
+                            <a href="https://github.com/settings/tokens" target="_blank" style="color: #58a6ff;">Generate token</a> 
+                            with "repo" scope
+                        </small>
+                    </div>
+
+                    <button type="button" class="generate-btn" id="push-to-github-btn" disabled style="background: #30363d; color: #8b949e;">
+                        🚀 Push to GitHub
+                    </button>
+                    <small id="push-help-text" style="color: #8b949e; font-size: 12px; display: block; margin-top: 5px;">Generate a repository first, then fill in GitHub credentials above</small>
+                </div>
+            </form>
+        </div>
+
+        <div class="output" id="output">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Starting generation process...</p>
+                <div class="progress-details" style="margin-top: 15px; font-size: 14px; color: #8b949e;">
+                    <div>📝 Preparing image file...</div>
+                    <div>⚙️ Starting commit generation...</div>
+                    <div>📦 Creating repository structure...</div>
+                    <div>🚀 Pushing to GitHub (if enabled)...</div>
+                </div>
+            </div>
+            
+            <div id="result" style="display: none;">
+                <h3>✅ Repository Generated Successfully!</h3>
+                <p>Your pixel art repository has been created. Download it and push to GitHub to see your contribution graph art!</p>
+                
+                <h4>Next Steps:</h4>
+                <pre id="instructions"></pre>
+                
+                <a href="#" id="download-link" class="download-link">📦 Download Repository ZIP</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="pixel-editor.js"></script>
+</body>
+</html>

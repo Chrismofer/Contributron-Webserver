@@ -1,0 +1,35 @@
+{
+  "name": "contributron-web",
+  "version": "1.0.0",
+  "description": "Web frontend for Contributron - GitHub pixel art generator",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build-rust": "cargo build --release",
+    "setup": "npm install && npm run build-rust",
+    "clean": "rm -rf uploads generated node_modules target"
+  },
+  "keywords": [
+    "github",
+    "contribution-graph",
+    "pixel-art",
+    "git",
+    "visualization"
+  ],
+  "author": "Contributron Web",
+  "license": "MIT",
+  "dependencies": {
+    "archiver": "^6.0.1",
+    "express": "^4.18.2",
+    "jimp": "^0.22.12",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
