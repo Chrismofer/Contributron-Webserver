@@ -374,7 +374,14 @@ async function processGeneration(repoId, contributronPath, imageFile, repoPath, 
                 '--image', finalImagePath,
                 '--name', name,
                 '--email', email
-            ]);
+            ], {
+                // Set environment variables for better performance
+                env: {
+                    ...process.env,
+                    'GIT_TERMINAL_PROMPT': '0', // Disable Git prompts
+                    'GIT_CONFIG_NOSYSTEM': '1', // Skip system Git config
+                }
+            });
 
             let output = '';
             let commitCount = 0;
@@ -384,11 +391,22 @@ async function processGeneration(repoId, contributronPath, imageFile, repoPath, 
                 output += text;
                 console.log('Contributron stdout:', text);
                 
-                // Count commits being generated (look for commit-like patterns)
-                const commitMatches = text.match(/commit|creating|generating/gi);
-                if (commitMatches) {
-                    commitCount += commitMatches.length;
-                    sendProgress(repoId, 'progress', `Generating commits... (${commitCount} processed)`);
+                // Parse progress percentage from output like "25% (2024-12-25)"
+                const progressMatch = text.match(/(\d+)%\s*\(([^)]+)\)/);
+                if (progressMatch) {
+                    const percentage = parseInt(progressMatch[1]);
+                    const date = progressMatch[2];
+                    sendProgress(repoId, 'progress', `Generating commits... ${percentage}%`, { 
+                        percentage, 
+                        currentDate: date 
+                    });
+                } else {
+                    // Fallback: Count commits being generated (look for commit-like patterns)
+                    const commitMatches = text.match(/commit|creating|generating/gi);
+                    if (commitMatches) {
+                        commitCount += commitMatches.length;
+                        sendProgress(repoId, 'progress', `Generating commits... (${commitCount} processed)`);
+                    }
                 }
             });
 

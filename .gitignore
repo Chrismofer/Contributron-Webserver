@@ -1,5 +1,7 @@
-**.png
 **.xcf
+# Ignore PNG files except examples
+*.png
+!examples/*.png
 
 **/.DS_Store
 **/.direnv

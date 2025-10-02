@@ -996,7 +996,20 @@ class PixelEditor {
                         break;
                         
                     case 'progress':
-                        loadingText.textContent = data.message;
+                        if (data.percentage !== undefined) {
+                            // Show progress with percentage bar
+                            loadingText.innerHTML = `
+                                ${data.message}
+                                <div style="background-color: #f0f0f0; border-radius: 10px; padding: 3px; margin-top: 8px; width: 100%;">
+                                    <div style="background-color: #28a745; height: 20px; border-radius: 7px; width: ${data.percentage}%; transition: width 0.3s ease;"></div>
+                                </div>
+                                <small style="color: #666; margin-top: 4px; display: block;">
+                                    ${data.currentDate ? `Current date: ${data.currentDate}` : ''}
+                                </small>
+                            `;
+                        } else {
+                            loadingText.textContent = data.message;
+                        }
                         break;
                         
                     case 'warning':
