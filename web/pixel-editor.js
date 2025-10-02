@@ -807,8 +807,9 @@ class PixelEditor {
             fitWidth = 7 * originalAspectRatio;
         }
         
-        // Calculate the width of a single copy
-        const singleCopyWidth = fitWidth / this.imageScale;
+        // Calculate the dimensions of a single copy (scaled uniformly)
+        const singleCopyWidth = fitWidth * this.imageScale;
+        const singleCopyHeight = fitHeight * this.imageScale;
         
         // Draw multiple copies with spacing
         for (let copyIndex = 0; copyIndex < this.imageCopies; copyIndex++) {
@@ -824,13 +825,13 @@ class PixelEditor {
                     
                     // Map to fitted image coordinates
                     const fitX = copyRelativeX + (singleCopyWidth / 2);
-                    const fitY = copyRelativeY + (fitHeight / 2);
+                    const fitY = copyRelativeY + (singleCopyHeight / 2);
                     
                     // Check if we're within the fitted image bounds for this copy
-                    if (fitX >= 0 && fitX < singleCopyWidth && fitY >= 0 && fitY < fitHeight) {
+                    if (fitX >= 0 && fitX < singleCopyWidth && fitY >= 0 && fitY < singleCopyHeight) {
                         // Map to original image coordinates
                         const sourceX = Math.floor((fitX / singleCopyWidth) * originalWidth);
-                        const sourceY = Math.floor((fitY / fitHeight) * originalHeight);
+                        const sourceY = Math.floor((fitY / singleCopyHeight) * originalHeight);
                         
                         // Check bounds and sample pixel
                         if (sourceX >= 0 && sourceX < originalWidth && sourceY >= 0 && sourceY < originalHeight) {
