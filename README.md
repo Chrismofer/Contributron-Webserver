@@ -166,7 +166,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎯 Roadmap, future features
 
-- **Mobile Optimization**: Better mobile web interface
-- **Mobile Optimization**: Better mobile web interface
+- Better mobile web interface
+- look into hosting so the tool is easily accessible
+- Add variable number of max commits (which is already a feature of the rust tool just not used yet)
 
 
