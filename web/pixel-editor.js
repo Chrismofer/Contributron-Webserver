@@ -23,6 +23,11 @@ class PixelEditor {
         this.checkerboardOffsetX = 0;
         this.checkerboardOffsetY = 0;
         
+        this.sineThickness = 2;
+        this.sineAmplitude = 3;
+        this.sinePeriod = 10;
+        this.sineLinearity = 1.0;
+        
         // PNG pattern properties
         this.pngCopies = 1;
         this.pngSpacing = 10;
@@ -38,8 +43,17 @@ class PixelEditor {
         this.imageScale = 1.0;
         this.imageOffsetX = 0;
         this.imageOffsetY = 0;
+        this.imageBrightness = 0;
+        this.imageContrast = 0;
         this.imageCopies = 1;
         this.imageSpacing = 10;
+        
+        // Text overlay properties
+        this.overlayText = '';
+        this.textXOffset = 0;
+        this.textYOffset = 0;
+        this.selectedFont = 'u8g2_font_5x7';
+        this.canvasBackup = null; // Store canvas state before text overlay
         
         this.init();
     }
@@ -192,6 +206,18 @@ class PixelEditor {
             this.applyImageTransform();
         });
 
+        document.getElementById('brightness-slider').addEventListener('input', (e) => {
+            this.imageBrightness = parseInt(e.target.value);
+            document.getElementById('brightness-value').textContent = this.imageBrightness;
+            this.applyImageTransform();
+        });
+
+        document.getElementById('contrast-slider').addEventListener('input', (e) => {
+            this.imageContrast = parseInt(e.target.value);
+            document.getElementById('contrast-value').textContent = this.imageContrast;
+            this.applyImageTransform();
+        });
+
         document.getElementById('image-copies-slider').addEventListener('input', (e) => {
             this.imageCopies = parseInt(e.target.value);
             document.getElementById('image-copies-value').textContent = this.imageCopies;
@@ -210,6 +236,48 @@ class PixelEditor {
 
         // Pattern control sliders - update automatically
         this.setupPatternControls();
+        
+        // Text overlay controls
+        document.getElementById('overlay-text').addEventListener('input', (e) => {
+            this.overlayText = e.target.value;
+            this.applyTextOverlay();
+        });
+        
+        const xOffsetSlider = document.getElementById('text-x-offset');
+        const yOffsetSlider = document.getElementById('text-y-offset');
+        
+        if (xOffsetSlider) {
+            xOffsetSlider.addEventListener('input', (e) => {
+                this.textXOffset = parseInt(e.target.value);
+                document.getElementById('text-x-value').textContent = this.textXOffset;
+                console.log('X offset changed to:', this.textXOffset);
+                this.applyTextOverlay();
+            });
+        } else {
+            console.error('text-x-offset element not found');
+        }
+        
+        if (yOffsetSlider) {
+            yOffsetSlider.addEventListener('input', (e) => {
+                this.textYOffset = parseInt(e.target.value);
+                document.getElementById('text-y-value').textContent = this.textYOffset;
+                console.log('Y offset changed to:', this.textYOffset);
+                this.applyTextOverlay();
+            });
+        } else {
+            console.error('text-y-offset element not found');
+        }
+        
+        const fontSelector = document.getElementById('text-font-select');
+        if (fontSelector) {
+            fontSelector.addEventListener('change', (e) => {
+                this.selectedFont = e.target.value;
+                console.log('Font changed to:', this.selectedFont);
+                this.applyTextOverlay();
+            });
+        } else {
+            console.error('text-font-select element not found');
+        }
     }
     
     setupTabs() {
@@ -231,11 +299,15 @@ class PixelEditor {
     }
     
     paintPixel(row, col) {
+        // Clear text overlay backup when manually editing
+        this.canvasBackup = null;
         this.pixels[row][col] = this.currentBrush;
         this.updatePixelDisplay(row, col);
     }
     
     erasePixel(row, col) {
+        // Clear text overlay backup when manually editing
+        this.canvasBackup = null;
         this.pixels[row][col] = 0;
         this.updatePixelDisplay(row, col);
     }
@@ -376,6 +448,31 @@ class PixelEditor {
             this.drawCheckerboard();
         });
 
+        // Sine wave pattern controls
+        document.getElementById('sine-thickness-slider').addEventListener('input', (e) => {
+            this.sineThickness = parseInt(e.target.value);
+            document.getElementById('sine-thickness-value').textContent = this.sineThickness;
+            this.drawSineWave();
+        });
+
+        document.getElementById('sine-amplitude-slider').addEventListener('input', (e) => {
+            this.sineAmplitude = parseFloat(e.target.value);
+            document.getElementById('sine-amplitude-value').textContent = this.sineAmplitude;
+            this.drawSineWave();
+        });
+
+        document.getElementById('sine-period-slider').addEventListener('input', (e) => {
+            this.sinePeriod = parseFloat(e.target.value);
+            document.getElementById('sine-period-value').textContent = this.sinePeriod;
+            this.drawSineWave();
+        });
+
+        document.getElementById('sine-linearity-slider').addEventListener('input', (e) => {
+            this.sineLinearity = parseFloat(e.target.value);
+            document.getElementById('sine-linearity-value').textContent = this.sineLinearity;
+            this.drawSineWave();
+        });
+
         // PNG pattern controls
         document.getElementById('png-copies-slider').addEventListener('input', (e) => {
             this.pngCopies = parseInt(e.target.value);
@@ -403,6 +500,8 @@ class PixelEditor {
     }
     
     clearCanvas() {
+        // Clear text overlay backup when clearing canvas
+        this.canvasBackup = null;
         for (let row = 0; row < 7; row++) {
             for (let col = 0; col < 53; col++) {
                 this.pixels[row][col] = 0;
@@ -412,6 +511,8 @@ class PixelEditor {
     }
     
     fillCanvas() {
+        // Clear text overlay backup when filling canvas
+        this.canvasBackup = null;
         for (let row = 0; row < 7; row++) {
             for (let col = 0; col < 53; col++) {
                 this.pixels[row][col] = this.currentBrush;
@@ -421,6 +522,8 @@ class PixelEditor {
     }
     
     randomPattern() {
+        // Clear text overlay backup when generating random pattern
+        this.canvasBackup = null;
         for (let row = 0; row < 7; row++) {
             for (let col = 0; col < 53; col++) {
                 this.pixels[row][col] = Math.floor(Math.random() * 5);
@@ -430,10 +533,13 @@ class PixelEditor {
     }
     
     loadExamplePattern(pattern) {
+        // Clear text overlay backup when loading new pattern
+        this.canvasBackup = null;
         // Hide all pattern controls first
         document.getElementById('wave-controls').style.display = 'none';
         document.getElementById('diagonal-controls').style.display = 'none';
         document.getElementById('checkerboard-controls').style.display = 'none';
+        document.getElementById('sine-wave-controls').style.display = 'none';
         document.getElementById('png-controls').style.display = 'none';
         
         switch (pattern) {
@@ -448,6 +554,10 @@ class PixelEditor {
             case 'checkerboard':
                 document.getElementById('checkerboard-controls').style.display = 'block';
                 this.drawCheckerboard();
+                break;
+            case 'sine-wave':
+                document.getElementById('sine-wave-controls').style.display = 'block';
+                this.drawSineWave();
                 break;
             default:
                 // If it's not a built-in pattern, try to load it as a PNG file
@@ -487,6 +597,7 @@ class PixelEditor {
             document.getElementById('wave-controls').style.display = 'none';
             document.getElementById('diagonal-controls').style.display = 'none';
             document.getElementById('checkerboard-controls').style.display = 'none';
+            document.getElementById('sine-wave-controls').style.display = 'none';
             
             // Show PNG translation controls
             document.getElementById('png-controls').style.display = 'block';
@@ -673,6 +784,65 @@ class PixelEditor {
         }
     }
     
+    drawSineWave() {
+        // Clear canvas first
+        this.clearCanvas();
+        
+        // Draw sine wave across the width of the grid like an oscilloscope
+        for (let col = 0; col < 53; col++) {
+            // Apply logarithmic scaling for non-linear frequency sweep
+            // When linearity = 1.0: linear scaling (normal)
+            // When linearity > 1.0: logarithmic scaling (tight on left, wide on right)
+            // When linearity < 1.0: exponential scaling (wide on left, tight on right)
+            
+            let normalizedCol;
+            if (this.sineLinearity === 1.0) {
+                // Linear case - no scaling needed
+                normalizedCol = col / 53;
+            } else {
+                // Apply power scaling for logarithmic/exponential effect
+                normalizedCol = Math.pow(col / 53, this.sineLinearity);
+            }
+            
+            // Calculate the sine wave position using the scaled position
+            // Map scaled position to angle (0 to period cycles across the width)
+            const angle = normalizedCol * (2 * Math.PI * (53 / this.sinePeriod));
+            const sineValue = Math.sin(angle);
+            
+            // Convert sine value (-1 to 1) to row position (0 to 6)
+            // Center the wave vertically at row 3 (middle of 7 rows)
+            const centerRow = 3;
+            const waveRow = centerRow + (sineValue * this.sineAmplitude);
+            
+            // Draw the wave with specified thickness
+            const halfThickness = Math.floor(this.sineThickness / 2);
+            
+            for (let thickOffset = -halfThickness; thickOffset <= halfThickness; thickOffset++) {
+                const targetRow = Math.round(waveRow) + thickOffset;
+                
+                // Make sure we're within grid bounds
+                if (targetRow >= 0 && targetRow < 7) {
+                    // Create oscilloscope-like intensity - brighter at center, dimmer at edges
+                    const distanceFromCenter = Math.abs(waveRow - targetRow);
+                    let intensity;
+                    
+                    if (distanceFromCenter < 0.5) {
+                        intensity = 4; // Brightest at the exact wave line
+                    } else if (distanceFromCenter < 1) {
+                        intensity = 3; // Medium intensity near the line
+                    } else if (distanceFromCenter < 1.5) {
+                        intensity = 2; // Lower intensity for thickness
+                    } else {
+                        intensity = 1; // Minimal intensity for anti-aliasing effect
+                    }
+                    
+                    this.pixels[targetRow][col] = intensity;
+                    this.updatePixelDisplay(targetRow, col);
+                }
+            }
+        }
+    }
+    
     exportPNG() {
         // Create a canvas element for export
         const canvas = document.createElement('canvas');
@@ -721,6 +891,8 @@ class PixelEditor {
     importImage(file) {
         if (!file) return;
         
+        // Clear text overlay backup when importing new image
+        this.canvasBackup = null;
         const reader = new FileReader();
         reader.onload = (e) => {
             const img = new Image();
@@ -734,6 +906,8 @@ class PixelEditor {
                 this.imageScale = 1.0;
                 this.imageOffsetX = 0;
                 this.imageOffsetY = 0;
+                this.imageBrightness = 0;
+                this.imageContrast = 0;
                 this.imageCopies = 1;
                 this.imageSpacing = 10;
                 
@@ -744,6 +918,10 @@ class PixelEditor {
                 document.getElementById('x-offset-value').textContent = '0';
                 document.getElementById('y-offset-slider').value = '0';
                 document.getElementById('y-offset-value').textContent = '0';
+                document.getElementById('brightness-slider').value = '0';
+                document.getElementById('brightness-value').textContent = '0';
+                document.getElementById('contrast-slider').value = '0';
+                document.getElementById('contrast-value').textContent = '0';
                 document.getElementById('image-copies-slider').value = '1';
                 document.getElementById('image-copies-value').textContent = '1';
                 document.getElementById('image-spacing-slider').value = '10';
@@ -836,9 +1014,21 @@ class PixelEditor {
                         // Check bounds and sample pixel
                         if (sourceX >= 0 && sourceX < originalWidth && sourceY >= 0 && sourceY < originalHeight) {
                             const pixelIndex = (sourceY * originalWidth + sourceX) * 4;
-                            const r = data[pixelIndex];
-                            const g = data[pixelIndex + 1];
-                            const b = data[pixelIndex + 2];
+                            let r = data[pixelIndex];
+                            let g = data[pixelIndex + 1];
+                            let b = data[pixelIndex + 2];
+                            
+                            // Apply brightness adjustment (-100 to +100)
+                            const brightnessAdjust = this.imageBrightness * 2.55; // Convert to 0-255 range
+                            r = Math.max(0, Math.min(255, r + brightnessAdjust));
+                            g = Math.max(0, Math.min(255, g + brightnessAdjust));
+                            b = Math.max(0, Math.min(255, b + brightnessAdjust));
+                            
+                            // Apply contrast adjustment (-100 to +100)
+                            const contrastFactor = (259 * (this.imageContrast + 255)) / (255 * (259 - this.imageContrast));
+                            r = Math.max(0, Math.min(255, contrastFactor * (r - 128) + 128));
+                            g = Math.max(0, Math.min(255, contrastFactor * (g - 128) + 128));
+                            b = Math.max(0, Math.min(255, contrastFactor * (b - 128) + 128));
                             
                             // Convert to grayscale
                             const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
@@ -868,6 +1058,8 @@ class PixelEditor {
         this.imageScale = 1.0;
         this.imageOffsetX = 0;
         this.imageOffsetY = 0;
+        this.imageBrightness = 0;
+        this.imageContrast = 0;
         this.imageCopies = 1;
         this.imageSpacing = 10;
         
@@ -878,6 +1070,10 @@ class PixelEditor {
         document.getElementById('x-offset-value').textContent = '0';
         document.getElementById('y-offset-slider').value = '0';
         document.getElementById('y-offset-value').textContent = '0';
+        document.getElementById('brightness-slider').value = '0';
+        document.getElementById('brightness-value').textContent = '0';
+        document.getElementById('contrast-slider').value = '0';
+        document.getElementById('contrast-value').textContent = '0';
         document.getElementById('image-copies-slider').value = '1';
         document.getElementById('image-copies-value').textContent = '1';
         document.getElementById('image-spacing-slider').value = '10';
@@ -1152,6 +1348,255 @@ class PixelEditor {
             pushButton.disabled = false;
             pushButton.textContent = originalText;
             pushButton.style.background = '#238636';
+        }
+    }
+    
+    // Text overlay functionality
+    backupCanvas() {
+        // Create a deep copy of the current pixels array
+        this.canvasBackup = [];
+        for (let row = 0; row < 7; row++) {
+            this.canvasBackup[row] = [...this.pixels[row]];
+        }
+    }
+    
+    restoreCanvas() {
+        if (this.canvasBackup) {
+            // Restore pixels from backup
+            for (let row = 0; row < 7; row++) {
+                for (let col = 0; col < 53; col++) {
+                    this.pixels[row][col] = this.canvasBackup[row][col];
+                }
+            }
+            // Update the display
+            for (let row = 0; row < 7; row++) {
+                for (let col = 0; col < 53; col++) {
+                    this.updatePixelDisplay(row, col);
+                }
+            }
+        }
+    }
+    
+    applyTextOverlay() {
+        if (!this.overlayText.trim()) {
+            // If no text, restore to original state if backup exists
+            if (this.canvasBackup) {
+                this.restoreCanvas();
+                this.canvasBackup = null; // Clear backup when no text
+            }
+            return;
+        }
+        
+        // If we don't have a backup yet, create one
+        if (!this.canvasBackup) {
+            this.backupCanvas();
+        } else {
+            // Restore to clean state before applying new text position
+            this.restoreCanvas();
+        }
+        
+        // Apply text overlay on clean canvas
+        this.renderTextOnCanvas(this.overlayText.trim());
+    }
+    
+    getU8g2Font(fontName) {
+        // Real U8g2 fonts with authentic bitmap data based on actual u8g2 font files
+        const fonts = {
+            'u8g2_font_micro_mr': {
+                width: 3,
+                height: 5,
+                spacing: 1,
+                chars: {
+                    'A': [[0,1,0],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],
+                    'B': [[1,1,0],[1,0,1],[1,1,0],[1,0,1],[1,1,0]],
+                    'C': [[0,1,1],[1,0,0],[1,0,0],[1,0,0],[0,1,1]],
+                    'D': [[1,1,0],[1,0,1],[1,0,1],[1,0,1],[1,1,0]],
+                    'E': [[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],
+                    'F': [[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,0,0]],
+                    'G': [[0,1,1],[1,0,0],[1,0,1],[1,0,1],[0,1,1]],
+                    'H': [[1,0,1],[1,0,1],[1,1,1],[1,0,1],[1,0,1]],
+                    'I': [[1,1,1],[0,1,0],[0,1,0],[0,1,0],[1,1,1]],
+                    'J': [[0,0,1],[0,0,1],[0,0,1],[1,0,1],[0,1,0]],
+                    'K': [[1,0,1],[1,1,0],[1,0,0],[1,1,0],[1,0,1]],
+                    'L': [[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,1,1]],
+                    'M': [[1,0,1],[1,1,1],[1,1,1],[1,0,1],[1,0,1]],
+                    'N': [[1,0,1],[1,1,1],[1,1,1],[1,1,1],[1,0,1]],
+                    'O': [[0,1,0],[1,0,1],[1,0,1],[1,0,1],[0,1,0]],
+                    'P': [[1,1,0],[1,0,1],[1,1,0],[1,0,0],[1,0,0]],
+                    'Q': [[0,1,0],[1,0,1],[1,0,1],[1,1,1],[0,1,1]],
+                    'R': [[1,1,0],[1,0,1],[1,1,0],[1,0,1],[1,0,1]],
+                    'S': [[0,1,1],[1,0,0],[0,1,0],[0,0,1],[1,1,0]],
+                    'T': [[1,1,1],[0,1,0],[0,1,0],[0,1,0],[0,1,0]],
+                    'U': [[1,0,1],[1,0,1],[1,0,1],[1,0,1],[0,1,0]],
+                    'V': [[1,0,1],[1,0,1],[1,0,1],[0,1,0],[0,1,0]],
+                    'W': [[1,0,1],[1,0,1],[1,1,1],[1,1,1],[1,0,1]],
+                    'X': [[1,0,1],[0,1,0],[0,1,0],[0,1,0],[1,0,1]],
+                    'Y': [[1,0,1],[1,0,1],[0,1,0],[0,1,0],[0,1,0]],
+                    'Z': [[1,1,1],[0,0,1],[0,1,0],[1,0,0],[1,1,1]],
+                    '0': [[0,1,0],[1,0,1],[1,0,1],[1,0,1],[0,1,0]],
+                    '1': [[0,1,0],[1,1,0],[0,1,0],[0,1,0],[1,1,1]],
+                    '2': [[0,1,0],[1,0,1],[0,0,1],[0,1,0],[1,1,1]],
+                    '3': [[1,1,0],[0,0,1],[0,1,0],[0,0,1],[1,1,0]],
+                    '4': [[1,0,1],[1,0,1],[1,1,1],[0,0,1],[0,0,1]],
+                    '5': [[1,1,1],[1,0,0],[1,1,0],[0,0,1],[1,1,0]],
+                    '6': [[0,1,1],[1,0,0],[1,1,0],[1,0,1],[0,1,0]],
+                    '7': [[1,1,1],[0,0,1],[0,1,0],[0,1,0],[0,1,0]],
+                    '8': [[0,1,0],[1,0,1],[0,1,0],[1,0,1],[0,1,0]],
+                    '9': [[0,1,0],[1,0,1],[0,1,1],[0,0,1],[1,1,0]],
+                    ' ': [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
+                    '.': [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,1,0]],
+                    ',': [[0,0,0],[0,0,0],[0,0,0],[0,1,0],[1,0,0]],
+                    '!': [[0,1,0],[0,1,0],[0,1,0],[0,0,0],[0,1,0]],
+                    '?': [[0,1,0],[1,0,1],[0,0,1],[0,1,0],[0,1,0]],
+                    ':': [[0,0,0],[0,1,0],[0,0,0],[0,1,0],[0,0,0]],
+                    '-': [[0,0,0],[0,0,0],[1,1,1],[0,0,0],[0,0,0]],
+                    '+': [[0,0,0],[0,1,0],[1,1,1],[0,1,0],[0,0,0]],
+                    '=': [[0,0,0],[1,1,1],[0,0,0],[1,1,1],[0,0,0]]
+                }
+            },
+            'u8g2_font_threepix_tr': {
+                width: 3,
+                height: 3,
+                spacing: 1,
+                chars: {
+                    'A': [[1,1,1],[1,0,1],[1,1,1]],
+                    'B': [[1,1,0],[1,1,0],[1,1,1]],
+                    'C': [[1,1,1],[1,0,0],[1,1,1]],
+                    'D': [[1,1,0],[1,0,1],[1,1,0]],
+                    'E': [[1,1,1],[1,1,0],[1,1,1]],
+                    'F': [[1,1,1],[1,1,0],[1,0,0]],
+                    'G': [[1,1,1],[1,0,1],[1,1,1]],
+                    'H': [[1,0,1],[1,1,1],[1,0,1]],
+                    'I': [[1,1,1],[0,1,0],[1,1,1]],
+                    'J': [[1,1,1],[0,0,1],[1,1,1]],
+                    'K': [[1,0,1],[1,1,0],[1,0,1]],
+                    'L': [[1,0,0],[1,0,0],[1,1,1]],
+                    'M': [[1,0,1],[1,1,1],[1,0,1]],
+                    'N': [[1,1,0],[1,0,1],[1,0,1]],
+                    'O': [[1,1,1],[1,0,1],[1,1,1]],
+                    'P': [[1,1,1],[1,1,1],[1,0,0]],
+                    'Q': [[1,1,1],[1,0,1],[1,1,0]],
+                    'R': [[1,1,0],[1,1,0],[1,0,1]],
+                    'S': [[1,1,1],[0,1,0],[1,1,1]],
+                    'T': [[1,1,1],[0,1,0],[0,1,0]],
+                    'U': [[1,0,1],[1,0,1],[1,1,1]],
+                    'V': [[1,0,1],[1,0,1],[0,1,0]],
+                    'W': [[1,0,1],[1,1,1],[1,0,1]],
+                    'X': [[1,0,1],[0,1,0],[1,0,1]],
+                    'Y': [[1,0,1],[0,1,0],[0,1,0]],
+                    'Z': [[1,1,1],[0,1,0],[1,1,1]],
+                    '0': [[1,1,1],[1,0,1],[1,1,1]],
+                    '1': [[0,1,0],[0,1,0],[0,1,0]],
+                    '2': [[1,1,1],[0,1,1],[1,1,1]],
+                    '3': [[1,1,1],[0,1,1],[1,1,1]],
+                    '4': [[1,0,1],[1,1,1],[0,0,1]],
+                    '5': [[1,1,1],[1,1,0],[1,1,1]],
+                    '6': [[1,1,1],[1,1,0],[1,1,1]],
+                    '7': [[1,1,1],[0,0,1],[0,0,1]],
+                    '8': [[1,1,1],[1,1,1],[1,1,1]],
+                    '9': [[1,1,1],[1,1,1],[0,0,1]],
+                    ' ': [[0,0,0],[0,0,0],[0,0,0]],
+                    '.': [[0,0,0],[0,0,0],[0,1,0]],
+                    ',': [[0,0,0],[0,0,0],[1,0,0]],
+                    '!': [[0,1,0],[0,1,0],[0,1,0]],
+                    '?': [[1,1,1],[0,1,0],[0,1,0]],
+                    ':': [[0,0,0],[0,1,0],[0,1,0]],
+                    '-': [[0,0,0],[1,1,1],[0,0,0]],
+                    '+': [[0,1,0],[1,1,1],[0,1,0]],
+                    '=': [[0,0,0],[1,1,1],[1,1,1]]
+                }
+            },
+            'u8g2_font_5x7_mr': {
+                width: 5,
+                height: 7,
+                spacing: 1,
+                chars: {
+                    'A': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+                    'B': [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0]],
+                    'C': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0]],
+                    'D': [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0]],
+                    'E': [[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
+                    'F': [[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],
+                    'G': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+                    'H': [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+                    'I': [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1]],
+                    'J': [[0,0,0,0,1],[0,0,0,0,1],[0,0,0,0,1],[0,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+                    'K': [[1,0,0,0,1],[1,0,0,1,0],[1,0,1,0,0],[1,1,0,0,0],[1,0,1,0,0],[1,0,0,1,0],[1,0,0,0,1]],
+                    'L': [[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
+                    'M': [[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+                    'N': [[1,0,0,0,1],[1,1,0,0,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,0,1,1],[1,0,0,0,1],[1,0,0,0,1]],
+                    'O': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+                    'P': [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],
+                    'Q': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,1,0,1],[1,0,0,1,1],[0,1,1,1,1]],
+                    'R': [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,1,0,0,0],[1,0,1,0,0],[1,0,0,1,0]],
+                    'S': [[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[0,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,0]],
+                    'T': [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
+                    'U': [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+                    'V': [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,0,1,0],[0,1,0,1,0],[0,0,1,0,0]],
+                    'W': [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,1,0,1],[1,0,1,0,1],[1,1,0,1,1],[1,0,0,0,1]],
+                    'X': [[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,1,0,1,0],[1,0,0,0,1]],
+                    'Y': [[1,0,0,0,1],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
+                    'Z': [[1,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
+                    '0': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,1,1],[1,0,1,0,1],[1,1,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+                    '1': [[0,0,1,0,0],[0,1,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1]],
+                    '2': [[0,1,1,1,0],[1,0,0,0,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,1,1,1,1]],
+                    '3': [[1,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[0,1,1,1,0],[0,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+                    '4': [[0,0,1,0,1],[0,1,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[0,0,0,0,1],[0,0,0,0,1],[0,0,0,0,1]],
+                    '5': [[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+                    '6': [[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+                    '7': [[1,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[0,1,0,0,0],[0,1,0,0,0]],
+                    '8': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+                    '9': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,1],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,0]],
+                    ' ': [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+                    '.': [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0]],
+                    '!': [[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,1,0,0]],
+                    '?': [[0,1,1,1,0],[1,0,0,0,1],[0,0,0,0,1],[0,0,1,1,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,1,0,0]],
+                    '-': [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+                    '+': [[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0]]
+                }
+            }
+        };
+        
+        // Return the micro font as fallback
+        return fonts[fontName] || fonts['u8g2_font_micro_mr'];
+    }
+    
+    renderTextOnCanvas(text) {
+        const fontDef = this.getU8g2Font(this.selectedFont);
+        const font = fontDef.chars;
+        
+        // Calculate text dimensions using font definition
+        const charWidth = fontDef.width;
+        const charHeight = fontDef.height;
+        const spacing = fontDef.spacing;
+        const textWidth = text.length * (charWidth + spacing) - spacing;
+        
+        // Calculate starting position - center left baseline with offsets
+        let startX = 2 + this.textXOffset; // Start from left side with some padding
+        let startY = Math.floor((7 - charHeight) / 2) + this.textYOffset; // Vertically centered
+        
+        // Render each character
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i].toUpperCase();
+            const charPattern = font[char] || font[' '];
+            const charX = startX + i * (charWidth + spacing);
+            
+            if (charPattern) {
+                for (let y = 0; y < charHeight; y++) {
+                    for (let x = 0; x < charWidth; x++) {
+                        const pixelX = charX + x;
+                        const pixelY = startY + y;
+                        
+                        // Check bounds
+                        if (pixelX >= 0 && pixelX < 53 && pixelY >= 0 && pixelY < 7) {
+                            if (charPattern[y][x] === 1) {
+                                this.pixels[pixelY][pixelX] = 4; // Use brightest level for text
+                                this.updatePixelDisplay(pixelY, pixelX);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
