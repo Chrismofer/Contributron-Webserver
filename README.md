@@ -13,7 +13,7 @@ Make your contributions display show whatever you want:
 <img width="1249" height="212" alt="image" src="https://github.com/user-attachments/assets/66ff9002-4370-4c30-87b3-6f3d29154aff" />
 
 
-![giphy](https://github.com/user-attachments/assets/d5dd3526-63fd-4ee6-8bae-dd697ccf6403)
+![giphy](https://github.com/user-attachments/assets/d5dd3526-63fd-4ee6-8bae-dd697ccf6403) <-- This is you once you get your Contributron running
 
 
 
