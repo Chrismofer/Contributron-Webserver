@@ -51,11 +51,9 @@ async function processImageForContributron(inputPath, outputPath) {
             // Use Sharp for final processing to ensure true grayscale format
             console.log('Using Sharp for grayscale conversion...');
             
-            // Get buffer from Jimp after basic processing
+            // Get buffer from Jimp after basic processing (preserve exact pixel values)
             const jimpProcessed = image
-                .resize(targetWidth, targetHeight)
-                .contrast(0.5)
-                .normalize();
+                .resize(targetWidth, targetHeight);  // Only resize, don't modify pixel values
             
             const tempBuffer = await jimpProcessed.getBufferAsync(Jimp.MIME_PNG);
             
@@ -76,9 +74,7 @@ async function processImageForContributron(inputPath, outputPath) {
             
             const processed = image
                 .greyscale()
-                .resize(targetWidth, targetHeight)
-                .contrast(0.5)
-                .normalize();
+                .resize(targetWidth, targetHeight);  // Only convert and resize, preserve exact values
             
             await processed.writeAsync(outputPath);
         }
@@ -415,7 +411,7 @@ async function processGeneration(repoId, contributronPath, imageFile, repoPath, 
         sendProgress(repoId, 'progress', 'Starting commit generation...');
         
         // Update the command to use the processed image file
-        const commandWithExt = `"${contributronPath}" --repo "${repoPath}" --image "${finalImagePath}" --name "${name}" --email "${email}" --brightness-levels 16`;
+        const commandWithExt = `"${contributronPath}" --repo "${repoPath}" --image "${finalImagePath}" --name "${name}" --email "${email}" --brightness-levels 255`;
         
         console.log(`Executing: ${commandWithExt}`);
 
@@ -427,7 +423,7 @@ async function processGeneration(repoId, contributronPath, imageFile, repoPath, 
                 '--image', finalImagePath,
                 '--name', name,
                 '--email', email,
-                '--brightness-levels', '16'  // Use 16 levels for better grayscale mapping
+                '--brightness-levels', '255'  // Use 255 levels for maximum commit range (0-255)
             ], {
                 // Set environment variables for better performance
                 env: {
