@@ -6,12 +6,9 @@ The Contributron is a web app that sets your Github's contributron graph to the 
 You may manually compose the image, import from a file, scale it to fit, composite the image with text or other patterns, etc. 
 Then it generates a Git repository with appropriately dated commits, then pushes it to the blank Github repository of your choice.
 
-
-<img width="1614" height="1257" alt="image" src="https://github.com/user-attachments/assets/152ce46c-be0b-4cf0-ac1f-b7e2e77f5edf" />
-
+Make your contributions display show whatever you want:
 
 <img width="966" height="275" alt="kq7Iz8E" src="https://github.com/user-attachments/assets/d30a4692-774c-41c0-8009-1e400768e87f" />
-
 
 <img width="1249" height="212" alt="image" src="https://github.com/user-attachments/assets/66ff9002-4370-4c30-87b3-6f3d29154aff" />
 
@@ -51,6 +48,15 @@ Then it generates a Git repository with appropriately dated commits, then pushes
    - `repo` (for private repositories)
    - `public_repo` (for public repositories)
 4. Copy the token and use it in the web interface
+
+
+
+
+
+The web interface looks like this
+
+<img width="1614" height="1257" alt="image" src="https://github.com/user-attachments/assets/152ce46c-be0b-4cf0-ac1f-b7e2e77f5edf" />
+
 
 
 
