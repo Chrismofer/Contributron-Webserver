@@ -793,7 +793,7 @@ class PixelEditor {
         const originalWidth = this.originalImageData.width;
         const originalHeight = this.originalImageData.height;
         const originalAspectRatio = originalWidth / originalHeight;
-        const gridAspectRatio = 52 / 7; // ~7.43
+        const gridAspectRatio = 53 / 7; // ~7.57
         
         // Determine how to fit the image while preserving aspect ratio
         let fitWidth, fitHeight;
@@ -909,7 +909,7 @@ class PixelEditor {
             const ctx = canvas.getContext('2d');
             
             // Create ImageData for grayscale pixel manipulation
-            const imageData = ctx.createImageData(52, 7);
+            const imageData = ctx.createImageData(53, 7);
             const pixelData = imageData.data;
             
             const levelToGray = [0, 64, 128, 192, 255];

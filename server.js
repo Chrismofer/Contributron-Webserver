@@ -6,14 +6,22 @@ const path = require('path');
 const archiver = require('archiver');
 const { v4: uuidv4 } = require('uuid');
 
-// Try to load Jimp, with fallback
-let Jimp;
+// Try to load Jimp and Sharp, with fallback
+let Jimp, sharp;
 try {
     Jimp = require('jimp');
     console.log('✅ Jimp loaded successfully for image processing');
 } catch (error) {
     console.log('⚠️  Jimp not available, image processing will be disabled');
     console.log('   Install with: npm install jimp');
+}
+
+try {
+    sharp = require('sharp');
+    console.log('✅ Sharp loaded successfully for advanced image processing');
+} catch (error) {
+    console.log('⚠️  Sharp not available, using Jimp only');
+    console.log('   Install with: npm install sharp');
 }
 
 const app = express();
@@ -28,22 +36,66 @@ async function processImageForContributron(inputPath, outputPath) {
     try {
         console.log('📸 Processing image for Contributron format:', inputPath);
         
-        // Load the image
+        // Load the image with Jimp first for basic processing
         const image = await Jimp.read(inputPath);
         
         console.log(`Original image size: ${image.bitmap.width}x${image.bitmap.height}`);
         
-        // Convert to grayscale and resize to 52x7 (contributron format)
-        const processed = image
-            .greyscale()  // Convert to monochrome
-            .resize(52, 7)  // Resize to contributron dimensions (52 weeks x 7 days)
-            .contrast(0.5)  // Increase contrast
-            .posterize(2);  // Reduce to 2 colors (black/white)
+        // Convert to grayscale and resize to proper contributron format
+        // The Rust binary expects any width × 7 height, so we maintain aspect ratio
+        const targetHeight = 7;
+        const aspectRatio = image.bitmap.width / image.bitmap.height;
+        const targetWidth = Math.round(targetHeight * aspectRatio);
         
-        // Save the processed image
-        await processed.writeAsync(outputPath);
+        if (sharp) {
+            // Use Sharp for final processing to ensure true grayscale format
+            console.log('Using Sharp for grayscale conversion...');
+            
+            // Get buffer from Jimp after basic processing
+            const jimpProcessed = image
+                .resize(targetWidth, targetHeight)
+                .contrast(0.5)
+                .normalize();
+            
+            const tempBuffer = await jimpProcessed.getBufferAsync(Jimp.MIME_PNG);
+            
+            // Use Sharp to convert to true grayscale format
+            await sharp(tempBuffer)
+                .greyscale()
+                .png({
+                    palette: false,
+                    compressionLevel: 6,
+                    colours: 256
+                })
+                .toColourspace('grey16')  // Force true grayscale colorspace
+                .toFile(outputPath);
+                
+        } else {
+            // Fallback to Jimp only
+            console.log('Using Jimp for processing (Sharp not available)...');
+            
+            const processed = image
+                .greyscale()
+                .resize(targetWidth, targetHeight)
+                .contrast(0.5)
+                .normalize();
+            
+            await processed.writeAsync(outputPath);
+        }
         
-        console.log('✅ Image processed successfully to 52x7 format:', outputPath);
+        console.log(`✅ Image processed successfully to ${targetWidth}x${targetHeight} format:`, outputPath);
+        
+        // Debug: Check if we need to transpose the image for proper orientation
+        if (sharp) {
+            const metadata = await sharp(outputPath).metadata();
+            console.log(`📊 Final image metadata:`, {
+                width: metadata.width,
+                height: metadata.height, 
+                channels: metadata.channels,
+                space: metadata.space
+            });
+        }
+        
         return outputPath;
     } catch (error) {
         console.error('❌ Image processing failed:', error.message);
@@ -353,27 +405,29 @@ async function processGeneration(repoId, contributronPath, imageFile, repoPath, 
     try {
         sendProgress(repoId, 'progress', 'Preparing uploaded image...');
         
-        // Simply ensure the image file has the correct extension
-        const finalImagePath = imageFile.path + '.png';
-        await fs.rename(imageFile.path, finalImagePath);
+        // Process the uploaded image to meet Rust binary requirements
+        const processedImagePath = imageFile.path + '_processed.png';
+        await processImageForContributron(imageFile.path, processedImagePath);
+        const finalImagePath = processedImagePath;
         
         console.log('✅ Using uploaded image:', finalImagePath);
         
         sendProgress(repoId, 'progress', 'Starting commit generation...');
         
         // Update the command to use the processed image file
-        const commandWithExt = `"${contributronPath}" --repo "${repoPath}" --image "${finalImagePath}" --name "${name}" --email "${email}"`;
+        const commandWithExt = `"${contributronPath}" --repo "${repoPath}" --image "${finalImagePath}" --name "${name}" --email "${email}" --brightness-levels 16`;
         
         console.log(`Executing: ${commandWithExt}`);
 
         // Execute the contributron CLI with progress updates
         await new Promise((resolve, reject) => {
             const { spawn } = require('child_process');
-            const process = spawn(contributronPath, [
+            const childProcess = spawn(contributronPath, [
                 '--repo', repoPath,
                 '--image', finalImagePath,
                 '--name', name,
-                '--email', email
+                '--email', email,
+                '--brightness-levels', '16'  // Use 16 levels for better grayscale mapping
             ], {
                 // Set environment variables for better performance
                 env: {
@@ -386,7 +440,7 @@ async function processGeneration(repoId, contributronPath, imageFile, repoPath, 
             let output = '';
             let commitCount = 0;
 
-            process.stdout.on('data', (data) => {
+            childProcess.stdout.on('data', (data) => {
                 const text = data.toString();
                 output += text;
                 console.log('Contributron stdout:', text);
@@ -410,7 +464,7 @@ async function processGeneration(repoId, contributronPath, imageFile, repoPath, 
                 }
             });
 
-            process.stderr.on('data', (data) => {
+            childProcess.stderr.on('data', (data) => {
                 const text = data.toString();
                 console.error('Contributron stderr:', text);
                 // Don't send every stderr as error, some might be progress info
@@ -419,7 +473,7 @@ async function processGeneration(repoId, contributronPath, imageFile, repoPath, 
                 }
             });
 
-            process.on('close', (code) => {
+            childProcess.on('close', (code) => {
                 if (code !== 0) {
                     reject(new Error(`Contributron exited with code ${code}`));
                 } else {
@@ -428,16 +482,24 @@ async function processGeneration(repoId, contributronPath, imageFile, repoPath, 
                 }
             });
 
-            process.on('error', (error) => {
+            childProcess.on('error', (error) => {
                 reject(error);
             });
         });
 
-        // Clean up the renamed image file
+        // Clean up the image files
         try {
-            await fs.unlink(imagePathWithExt);
+            await fs.unlink(imageFile.path); // Original uploaded file
+            console.log('✅ Cleaned up original uploaded file');
         } catch (err) {
-            console.warn('Failed to cleanup renamed image:', err.message);
+            console.warn('Failed to cleanup original uploaded file:', err.message);
+        }
+        
+        try {
+            await fs.unlink(finalImagePath); // Processed image file
+            console.log('✅ Cleaned up processed image file');
+        } catch (err) {
+            console.warn('Failed to cleanup processed image file:', err.message);
         }
 
         // No auto-push - always generate local repo only
