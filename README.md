@@ -2,7 +2,23 @@
 
 > **Use your GitHub contribution graph to display beautiful pixel art.**
 
-The Contributron is a web app that sets your Github's contributron graph to the image of your choice. You may manually paint the marquee, import an image and scale it to fit, etc. Then it generates a Git repository with appropriately dated commits, then pushes it to a blank Github repository of your choice.
+The Contributron is a web app that sets your Github's contributron graph to the image of your choice. 
+You may manually compose the image, import from a file, scale it to fit, composite the image with text or other patterns, etc. 
+Then it generates a Git repository with appropriately dated commits, then pushes it to the blank Github repository of your choice.
+
+
+<img width="1614" height="1257" alt="image" src="https://github.com/user-attachments/assets/152ce46c-be0b-4cf0-ac1f-b7e2e77f5edf" />
+
+
+<img width="966" height="275" alt="kq7Iz8E" src="https://github.com/user-attachments/assets/d30a4692-774c-41c0-8009-1e400768e87f" />
+
+
+<img width="1249" height="212" alt="image" src="https://github.com/user-attachments/assets/66ff9002-4370-4c30-87b3-6f3d29154aff" />
+
+
+![giphy](https://github.com/user-attachments/assets/d5dd3526-63fd-4ee6-8bae-dd697ccf6403)
+
+
 
 ## 🚀 Quick Start
 
