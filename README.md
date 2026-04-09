@@ -160,7 +160,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Rust implementation of repo commit generation by Will Sturgeon @wsturgeon
+- Rust implementation of repo commit generation by Will Sturgeon @wrsturgeon
 - Contributron concept, JS frontend by Chris Bovee @Chrismofer
 
 
