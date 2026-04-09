@@ -112,7 +112,7 @@ Other contributron examples:
 
 ### Architecture
 - **Frontend**: Vanilla JavaScript with real-time canvas manipulation,  Node.js/Express with Server-Sent Events for progress tracking, Jimp for client-side image transformations
-- **Backend**: Rust binary for high-performance Git repository generation written by Will Sturgeon @wsturgeon
+- **Backend**: Rust binary for high-performance Git repository generation written by Will Sturgeon [@wrsturgeon](https://github.com/wrsturgeon)
 
 
 ### File Structure
